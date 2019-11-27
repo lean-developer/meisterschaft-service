@@ -3,10 +3,7 @@ import { promisify } from 'util';
 
 @Injectable()
 export class RedisService {
-  private redis = require('redis');
-  private bluebird = require('bluebird');
-  private client: any;
-
+  private client = require('redis').createClient(process.env.REDIS_URL);
   private getAsync;
   private zrangeAsync;
   private hgetallAsync;
@@ -14,10 +11,6 @@ export class RedisService {
   private zaddAsync; 
 
   constructor() {
-    let host = '127.0.0.1';
-    let port = 6379;
-    this.client = this.redis.createClient(port, host);
-
     this.getAsync = promisify(this.client.get).bind(this.client);
     this.zrangeAsync = promisify(this.client.zrange).bind(this.client);
     this.hgetallAsync = promisify(this.client.hgetall).bind(this.client);
