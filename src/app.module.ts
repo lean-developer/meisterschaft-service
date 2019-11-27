@@ -12,16 +12,17 @@ import { Spieltag } from './spieltag/spieltag.entity';
 import { Saison } from './saison/saison.entity';
 import { LigaModule } from './liga/liga.module';
 import { CacheService } from './cache/cache.service';
+const dotenv = require('dotenv').config();
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: '81.169.194.119',
+      host: process.env.DB_HOST,  
       port: 3306,
-      username: 'sa',
-      password: '$123Not4All456#',
-      database: 'icl_meisterschaft',
+      username: process.env.DB_USER, 
+      password: process.env.DB_PW, 
+      database: process.env.DB_NAME,
       entities: [Mannschaft, Spiel, Spieltag, Saison],
       synchronize: true,
     }),
