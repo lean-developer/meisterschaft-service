@@ -4,7 +4,9 @@ import { promisify } from 'util';
 @Injectable()
 export class RedisService {
   private redis = require('redis');
+  private bluebird = require('bluebird');
   private client: any;
+
   private getAsync;
   private zrangeAsync;
   private hgetallAsync;
@@ -13,14 +15,15 @@ export class RedisService {
 
   constructor() {
     let host = '127.0.0.1';
-    // let host = '81.169.194.119';
     let port = 6379;
     this.client = this.redis.createClient(port, host);
+
     this.getAsync = promisify(this.client.get).bind(this.client);
     this.zrangeAsync = promisify(this.client.zrange).bind(this.client);
     this.hgetallAsync = promisify(this.client.hgetall).bind(this.client);
     this.hmsetAsync = promisify(this.client.hmset).bind(this.client);
     this.zaddAsync = promisify(this.client.zadd).bind(this.client);
+    
     this.client.on('connect', function() { 
     });
   }
