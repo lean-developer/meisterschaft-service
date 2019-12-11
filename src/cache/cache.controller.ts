@@ -1,8 +1,8 @@
-import { Spieltag } from './../spieltag/spieltag.entity';
-import { Spiel } from './../spiel/spiel.entity';
+import { Spieltag } from '../spieltag/spieltag.entity';
+import { Spiel } from '../spiel/spiel.entity';
 import { Get, Controller, Param, Post } from "@nestjs/common";
 import { CacheService } from './cache.service';
-import { MannschaftRaw } from "./../mannschaft/mannschaft.entity";
+import { MannschaftRaw } from "../mannschaft/mannschaft.entity";
 
 @Controller('cache')
 export class CacheController {
@@ -32,6 +32,6 @@ export class CacheController {
   @Post('/new')
   async createCache() {
       console.log('createCache ...');
-      await this.cacheService.createCache();
+      // await this.cacheService.createCache();
   }
 }

@@ -1,3 +1,4 @@
+import { CacheService } from './../cache/cache.service';
 import { Mannschaft } from './../mannschaft/mannschaft.entity';
 import { Spiel } from './spiel.entity';
 import { Injectable } from "@nestjs/common";
@@ -8,9 +9,9 @@ import { MannschaftService } from './../mannschaft/mannschaft.service';
 @Injectable()
 export class SpielService {
     constructor(
-        @InjectRepository(Spiel) 
+        @InjectRepository(Spiel)
         private readonly spielRepository: Repository<Spiel>,
-        private readonly mannschaftService: MannschaftService) {
+        ) {
     }
 
     async findAll(): Promise<Spiel[]> {
@@ -23,6 +24,7 @@ export class SpielService {
         spiel.gast = gastMannschaft;
         spiel.heimTore = heimTore;
         spiel.gastTore = gastTore;
+        // this.cacheService.setSpiel(spiel);
         return await this.spielRepository.save(spiel); 
     }
 
@@ -34,14 +36,17 @@ export class SpielService {
     }
 
     async createSpiele(spiele: Spiel[]): Promise<Spiel[]> {
+        // this.cacheService.setSpiele(spiele);
         return await this.spielRepository.save(spiele);
     }
 
     async updateSpiele(spiele: Spiel[]): Promise<Spiel[]> {
+        // this.cacheService.setSpiele(spiele);
         return await this.spielRepository.save(spiele);
     }
 
     async deleteSpiele(spiele: Spiel[]): Promise<Spiel[]> {
+        // TODO: cache
         return await this.spielRepository.remove(spiele);
     }
 }

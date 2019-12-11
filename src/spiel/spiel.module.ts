@@ -1,3 +1,6 @@
+import { CacheModule } from './../cache/cache.module';
+import { CacheService } from './../cache/cache.service';
+import { SharedModule } from './../shared/shared.module';
 import { SpielService } from './spiel.service';
 import { Spiel } from './spiel.entity';
 import { Module } from '@nestjs/common';
@@ -8,7 +11,9 @@ import { SpielController } from './spiel.controller';
 @Module({
     imports: [
         TypeOrmModule.forFeature([Spiel]),
-        MannschaftModule
+        MannschaftModule,
+        SharedModule,
+        CacheModule
     ],
     providers: [
         SpielService

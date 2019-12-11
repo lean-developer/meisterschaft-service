@@ -7,7 +7,7 @@ export class RedisService {
   private getAsync;
   private zrangeAsync;
   private hgetallAsync;
-  private hmsetAsync;
+  private hmsetAsync; 
   private zaddAsync; 
 
   constructor() {

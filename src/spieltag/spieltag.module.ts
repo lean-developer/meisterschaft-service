@@ -1,3 +1,4 @@
+import { SharedModule } from './../shared/shared.module';
 import { SpielModule } from './../spiel/spiel.module';
 import { MannschaftModule } from './../mannschaft/mannschaft.module';
 import { SpieltagController } from './spieltag.controller';
@@ -9,8 +10,9 @@ import { SpieltagService } from './spieltag.service';
 @Module({
     imports: [
         TypeOrmModule.forFeature([Spieltag]),
+        SpielModule,
         MannschaftModule,
-        SpielModule
+        SharedModule 
     ],
     providers: [
         SpieltagService
@@ -18,6 +20,6 @@ import { SpieltagService } from './spieltag.service';
     exports: [
         SpieltagService
     ],
-    controllers: [SpieltagController]
+    controllers: [SpieltagController]  
 })
 export class SpieltagModule {}

@@ -3,6 +3,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DeleteResult } from 'typeorm';
 import { Mannschaft, MannschaftRaw } from './mannschaft.entity';
+import * as cheerio from 'cheerio';
+import { MannschaftFifa } from './mannschaftFifa';
+const axios = require('axios');
 
 @Injectable()
 export class MannschaftService {
@@ -15,6 +18,50 @@ export class MannschaftService {
 
     async findAll(): Promise<Mannschaft[]> {
         return await this.mannschaftRepository.find();
+    }
+
+    async findAllFifaForConfederation(confederation: string) {
+        let mannschaften: Array<MannschaftFifa> = [];
+        let mannschaftenFifa: Array<MannschaftFifa> = await this.findAllFifa();
+        for (let m of mannschaftenFifa) {
+            if (m.confederation === confederation) {
+                mannschaften.push(m);
+            }
+        }
+        return mannschaften;
+    }
+
+    async findAllFifa() {
+        let mannschaftenFifa: Array<MannschaftFifa> = [];
+        let html = await axios.get('https://de.fifa.com/fifa-world-ranking/ranking-table/men/');
+        const $ = cheerio.load(html.data);
+        const elems = $('td.fi-table__td.fi-table__points');
+        for (let i = 0; i < elems.length; i++) {
+            const td = $(elems[i]).parent();
+            const id = $(td).find('div').attr('data-team-id');
+            const rank = $(td).find('td.fi-table__td.fi-table__rank').text();
+            const points = $(td).find('td.fi-table__td.fi-table__points').text();
+            const prevpoints = $(td).find('td.fi-table__td.fi-table__prevpoints').text();
+            const rankingmovement = $(td).find('td.fi-table__td.fi-table__rankingmovement').text();
+            const confederation = $(td).find('td.fi-table__td.fi-table__confederation.hidden').text();
+            const team = $(td).find('span.fi-t__nText').text();
+            const teamId = $(td).find('span.fi-t__nTri').text();
+            const img = $(td).find('img').attr('src');
+            let conf: string = confederation.replace('#', '').replace('#', '');
+            
+            let mannschaftFifa: MannschaftFifa = new MannschaftFifa();
+            mannschaftFifa.id = id;
+            mannschaftFifa.rank = rank;
+            mannschaftFifa.points = points;
+            mannschaftFifa.prevpoints = prevpoints;
+            mannschaftFifa.rankingmovement = rankingmovement;  
+            mannschaftFifa.confederation = conf;
+            mannschaftFifa.team = team;
+            mannschaftFifa.teamId = teamId;
+            mannschaftFifa.img = img;
+            mannschaftenFifa.push(mannschaftFifa);
+        }
+        return mannschaftenFifa;
     }
 
     async findAllSpiele(): Promise<Mannschaft[]> {

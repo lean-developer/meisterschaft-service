@@ -1,6 +1,7 @@
+import { SessionGuard } from './../shared/session/session.guard';
 import { Score } from './score';
 import { MannschaftService } from './mannschaft.service';
-import { Controller, Get, Post, Body, Delete, Param, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Delete, Param, Logger, UseGuards } from '@nestjs/common';
 import { Mannschaft } from './mannschaft.entity';
 import { DeleteResult } from 'typeorm';
 
@@ -15,6 +16,16 @@ export class MannschaftController {
         return this.mannschaftService.findAll();
     }
 
+    @Get('/fifa')
+    async getFifaMannschaften() {
+        return this.mannschaftService.findAllFifa();
+    }
+
+    @Get('/fifa/:confederation')
+    async getFifaMannschaftenForConfederation(@Param() params: any) {
+        return this.mannschaftService.findAllFifaForConfederation(params.confederation);
+    }
+
     @Get('/spiele')
     async getMannschaftenSpiele(): Promise<Mannschaft[]> {
         return this.mannschaftService.findAllSpiele();
@@ -27,6 +38,7 @@ export class MannschaftController {
     }
 
     @Get('/spiele/score')
+    @UseGuards(SessionGuard)
     async getMannschaftenScores(): Promise<Score[]> {
         this.logger.log('getScore');
         return await this.mannschaftService.getScores();
@@ -34,7 +46,7 @@ export class MannschaftController {
 
     @Post()
     async createMannschaften(@Body() mannschaften: Mannschaft[]): Promise<Mannschaft[]> {
-        return this.mannschaftService.createMannschaften(mannschaften);
+        return this.mannschaftService.createMannschaften(mannschaften); 
     }
 
     @Delete(':id')

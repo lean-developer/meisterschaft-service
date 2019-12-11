@@ -1,23 +1,35 @@
-import { SpieltagService } from './../spieltag/spieltag.service';
-import { SpielService } from './../spiel/spiel.service';
-import { HashFieldValue } from './../redis.service';
-import { MannschaftRaw } from './../mannschaft/mannschaft.entity';
-import { MannschaftService } from './../mannschaft/mannschaft.service';
-import { RedisService } from '../redis.service';
+import { HashFieldValue } from './../redis/redis.service';
+import { MannschaftRaw } from '../mannschaft/mannschaft.entity';
+import { RedisService } from './../redis/redis.service';
 import { Injectable } from "@nestjs/common";
-import { Mannschaft } from './../mannschaft//mannschaft.entity';
-import { Spiel } from './../spiel/spiel.entity';
-import { Spieltag } from './../spieltag/spieltag.entity';
+import { Mannschaft } from '../mannschaft/mannschaft.entity';
+import { Spiel } from '../spiel/spiel.entity';
+import { Spieltag } from '../spieltag/spieltag.entity';
 
 @Injectable()
 export class CacheService {
 
-  constructor(private redisService: RedisService, private mannschaftService: MannschaftService, private spielService: SpielService, private spieltagService: SpieltagService) {
+  constructor(
+    private readonly redisService: RedisService) {
   }
 
+  /*
   async createCache() {
     // Mannschaften
     let mannschaften: Array<Mannschaft> = await this.mannschaftService.findAll();
+    this.setMannschaften(mannschaften);
+
+    // Spiele
+    let spiele: Array<Spiel> = await this.spielService.findAll();
+    this.setSpiele(spiele);
+
+    // Spieltage
+    let spieltage: Array<Spieltag> = await this.spieltagService.findAll();
+    this.setSpieltage(spieltage);
+  }
+  */
+
+  public setMannschaften(mannschaften: Array<Mannschaft>): void {
     for(let mannschaft of mannschaften) {
       let raw: MannschaftRaw = mannschaft;
       let hashKey: string = 'mannschaft:' + raw.id;
@@ -30,9 +42,27 @@ export class CacheService {
       fieldValues.push(fieldValueKuerzel);
       this.redisService.setHash(hashKey, fieldValues);
     }
+  }
 
-    // Spiele
-    let spiele: Array<Spiel> = await this.spielService.findAll();
+  public setSpieltage(spieltage: Array<Spieltag>): void {
+    for (let spieltag of spieltage) {
+      let key: string = 'spieltag:' + spieltag.nr;
+      let members: Array<string> = [];
+      for (let spiel of spieltag.spiele) {
+        let member: string = 'spiel:' + spiel.id;
+        members.push(member);
+      }
+      this.redisService.setList(key, members);
+    }
+  }
+
+  public setSpiel(spiel: Spiel): void {
+    let spiele: Array<Spiel> = [];
+    spiele.push(spiel);
+    this.setSpiele(spiele);
+  }
+
+  public setSpiele(spiele: Array<Spiel>): void {
     for (let spiel of spiele) {
       let hashKey: string = 'spiel:' + spiel.id;
       let fieldValueId: HashFieldValue = { field: 'id', value: spiel.id.toString() };
@@ -47,18 +77,6 @@ export class CacheService {
       fieldValues.push(fieldValueHeim);
       fieldValues.push(fieldValueGast);
       this.redisService.setHash(hashKey, fieldValues);
-    }
-
-    // Spieltage
-    let spieltage: Array<Spieltag> = await this.spieltagService.findAll();
-    for (let spieltag of spieltage) {
-      let key: string = 'spieltag:' + spieltag.nr;
-      let members: Array<string> = [];
-      for (let spiel of spieltag.spiele) {
-        let member: string = 'spiel:' + spiel.id;
-        members.push(member);
-      }
-      this.redisService.setList(key, members);
     }
   }
 
