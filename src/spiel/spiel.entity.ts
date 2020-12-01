@@ -1,5 +1,4 @@
-import { Mannschaft } from './../mannschaft/mannschaft.entity';
-import { Column, ManyToOne } from 'typeorm';
+import { Column } from 'typeorm';
 import { Entity } from 'typeorm';
 import { PrimaryGeneratedColumn } from 'typeorm';
 
@@ -8,18 +7,25 @@ export class Spiel {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne( type => Mannschaft, mannschaft => mannschaft.heimSpiele)
-    heim: Mannschaft;
+    // @ManyToOne( type => Mannschaft, mannschaft => mannschaft.heimSpiele)
+    // heim: Mannschaft;
 
-    @ManyToOne( type => Mannschaft, mannschaft => mannschaft.gastSpiele)
-    gast: Mannschaft;
+    // @ManyToOne( type => Mannschaft, mannschaft => mannschaft.gastSpiele)
+    // gast: Mannschaft;
 
     @Column()
-    heimTore?: number;
+    heimId: number;
 
-    @Column() 
-    gastTore?: number;  
+    @Column()
+    gastId: number;
 
+    @Column()
+    heimTore: number;
+
+    @Column()
+    gastTore: number;
+
+    /*
     get isGespielt(): boolean {
         return (this.heimTore >= 0 && this.gastTore >= 0);
     }
@@ -55,4 +61,5 @@ export class Spiel {
         }
         return 0;
     }
+    */
 }

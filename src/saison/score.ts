@@ -1,4 +1,4 @@
-import { MannschaftRaw } from './../mannschaft/mannschaft.entity';
+import { MannschaftRaw } from '../mannschaft/mannschaft.entity';
 
 export class Score {
     mannschaft: MannschaftRaw;

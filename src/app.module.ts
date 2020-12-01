@@ -13,29 +13,33 @@ import { CacheModule } from './cache/cache.module';
 import { RedisModule } from './redis/redis.module';
 import { TurnierModule } from './turnier/turnier.module';
 import { Turnier } from './turnier/turnier.entity';
+import { Liga } from './liga/liga.entity';
+import { Match } from './match/match.entity';
+import { MatchModule } from './match/match.module';
+// tslint:disable-next-line: no-var-requires
 const dotenv = require('dotenv').config();
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: process.env.DB_HOST,  
+      host: process.env.DB_HOST,
       port: 3306,
-      username: process.env.DB_USER, 
-      password: process.env.DB_PW, 
+      username: process.env.DB_USER,
+      password: process.env.DB_PW,
       database: process.env.DB_NAME,
-      entities: [Mannschaft, Spiel, Spieltag, Saison, Turnier],
+      entities: [Mannschaft, Spieltag, Saison, Turnier, Liga, Match],
       synchronize: true,
     }),
-    SpielModule,
+    MatchModule,
     SpieltagModule,
     MannschaftModule,
     SaisonModule,
     TurnierModule,
     LigaModule,
     HttpModule,
-    RedisModule,
-    CacheModule,
+    /* RedisModule,
+    CacheModule, */
     TurnierModule,
   ]
 })

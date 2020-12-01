@@ -1,6 +1,6 @@
 import { SpielService } from './spiel.service';
 import { Spiel } from './spiel.entity';
-import { Get, Controller, Post, Body } from '@nestjs/common';
+import { Get, Controller, Post, Body, Param } from '@nestjs/common';
 
 @Controller('spiel')
 export class SpielController {
@@ -9,6 +9,11 @@ export class SpielController {
     @Get()
     async getSpiele(): Promise<Spiel[]> {
         return this.spielService.findAll();
+    }
+
+    @Get(':id')
+    async getSpiel(@Param('id') id: number): Promise<Spiel> {
+        return this.spielService.find(id);
     }
 
     @Post()

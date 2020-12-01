@@ -6,20 +6,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Module } from '@nestjs/common';
 import { Spieltag } from './spieltag.entity';
 import { SpieltagService } from './spieltag.service';
+import { MatchModule } from 'src/match/match.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Spieltag]),
-        SpielModule,
+        MatchModule,
         MannschaftModule,
-        SharedModule 
+        SharedModule,
     ],
     providers: [
-        SpieltagService
+        SpieltagService,
     ],
     exports: [
-        SpieltagService
+        SpieltagService,
     ],
-    controllers: [SpieltagController]  
+    controllers: [SpieltagController],
 })
 export class SpieltagModule {}

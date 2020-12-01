@@ -1,12 +1,15 @@
-import { Column, OneToMany } from 'typeorm';
+import { Column, OneToMany, ManyToMany, JoinTable, ManyToOne } from 'typeorm';
 import { Entity } from 'typeorm';
 import { PrimaryGeneratedColumn } from 'typeorm';
-import { Spiel } from 'src/spiel/spiel.entity';
+import { Match } from 'src/match/match.entity';
 
 @Entity('mannschaft')
 export class Mannschaft {
     @PrimaryGeneratedColumn()
     id: number;
+
+    @Column()
+    uid: number;
 
     @Column({ length: 100 })
     name: string;
@@ -14,11 +17,23 @@ export class Mannschaft {
     @Column({ length: 5 })
     kuerzel: string;
 
-    @OneToMany(type => Spiel, spiel => spiel.heim)
-    heimSpiele: Spiel[];
+    @Column({ length: 100 })
+    img: string;
 
-    @OneToMany(type => Spiel, spiel => spiel.gast)
-    gastSpiele: Spiel[];
+    @Column({length: 100})
+    team: string;
+
+    @Column({ length: 100})
+    country: string;
+
+    @Column()
+    saisonId: number;
+
+    @OneToMany(type => Match, match => match.heim)
+    heimMatches: Match[];
+
+    @OneToMany(type => Match, match => match.gast)
+    gastMatches: Match[];
 }
 
 export interface MannschaftRaw {

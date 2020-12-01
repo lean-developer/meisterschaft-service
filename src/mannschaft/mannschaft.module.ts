@@ -1,23 +1,23 @@
 import { SharedModule } from './../shared/shared.module';
 import { MannschaftController } from './mannschaft.controller';
-import { Module, HttpModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Mannschaft } from './mannschaft.entity';
 import { MannschaftService } from './mannschaft.service';
-import { Score } from './score';
+import { Score } from '../saison/score';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Mannschaft]),
         Score,
-        SharedModule
+        SharedModule,
     ],
     providers: [
-        MannschaftService
+        MannschaftService,
     ],
     exports: [
-        MannschaftService
+        MannschaftService,
     ],
-    controllers: [MannschaftController] 
+    controllers: [MannschaftController],
 })
 export class MannschaftModule {}

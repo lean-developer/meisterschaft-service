@@ -6,6 +6,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DeleteResult } from 'typeorm';
 import { Spieltag } from './spieltag.entity';
+import { Saison } from 'src/saison/saison.entity';
+import { MatchService } from 'src/match/match.service';
+import { Match } from 'src/match/match.entity';
 
 @Injectable()
 export class SpieltagService {
@@ -15,21 +18,45 @@ export class SpieltagService {
         @InjectRepository(Spieltag) 
         private readonly spieltagRepository: Repository<Spieltag>,
         private readonly mannschaftService: MannschaftService,
-        private readonly spielService: SpielService) {
+        private readonly matchService: MatchService) {
     }
 
     async findAll(): Promise<Spieltag[]> {
-        return await this.spieltagRepository.find({ relations: ["spiele", "spiele.heim", "spiele.gast"]});
+        return await this.spieltagRepository.find();
     }
 
-    async find(nr: number): Promise<Spieltag> {
-        return await this.spieltagRepository.findOne(nr, { relations: ["spiele", "spiele.heim", "spiele.gast"]});
+    async find(id: number): Promise<Spieltag> {
+        return await this.spieltagRepository.findOne(id);
     }
 
-    async createSpieltag(nr: number, spiele: Spiel[]) {
+    async findByNrAndBySaion(nr: number, saisonId: number): Promise<Spieltag> {
+        const spieltag = this.spieltagRepository
+            .createQueryBuilder('spieltag')
+            .leftJoinAndSelect('spieltag.matches', 'matches')
+            .leftJoinAndSelect('matches.heim', 'heim')
+            .leftJoinAndSelect('matches.gast', 'gast')
+            .where('spieltag.saisonId = :saisonId', { saisonId })
+            .andWhere('spieltag.nr = :nr', { nr })
+            .getOne();
+        return spieltag;
+    }
+
+    async findBySaison(saisonId: number): Promise<Spieltag[]> {
+        const spieltage = this.spieltagRepository
+            .createQueryBuilder('spieltag')
+            .leftJoinAndSelect('spieltag.matches', 'matches')
+            .leftJoinAndSelect('matches.heim', 'heim')
+            .leftJoinAndSelect('matches.gast', 'gast')
+            .where('spieltag.saisonId = :saisonId', { saisonId })
+            .orderBy('spieltag.nr')
+            .getMany();
+        return spieltage;
+    }
+   
+    async createSpieltag(saison: Saison, nr: number, matches: Match[]) {
         let spieltag: Spieltag = new Spieltag();
         spieltag.nr = nr;
-        spieltag.spiele = spiele;
+        spieltag.matches = matches;
         return await this.spieltagRepository.save(spieltag);
     }
 
@@ -37,55 +64,52 @@ export class SpieltagService {
         let mannschaften: Mannschaft[] = await this.mannschaftService.findAll();
     }
 
-    async createSpieltage(createSpieltage: CreateSpieltag[]): Promise<Spieltag[]> {
+    async createSpieltage(saisonId: number, createSpieltage: CreateSpieltag[]): Promise<Spieltag[]> {
         let savedSpieltage: Spieltag[] = [];
         for (let createSpieltag of createSpieltage) {
-            let spieltagSpiele: Spiel[] = [];
-            for (let spiel of createSpieltag.spiele) {
-                let heim: Mannschaft = await this.mannschaftService.findByKuerzel(spiel.heim);
-                let gast: Mannschaft = await this.mannschaftService.findByKuerzel(spiel.gast);
-                let heimTore: number = spiel.heimTore;
-                let gastTore: number = spiel.gastTore;
-                if (heimTore && gastTore) {
-                    // Spiel mit Tore anlegen
-                    let savedSpiel: Spiel = await this.spielService.create(heim, gast, spiel.heimTore, spiel.gastTore);
-                    spieltagSpiele.push(savedSpiel);
-                }
-                else {
-                    // Spiel ohne Tore (d.h. noch nicht gespielt) anlegen
-                    let savedSpiel: Spiel = await this.spielService.create(heim, gast, -1, -1);
-                    spieltagSpiele.push(savedSpiel);
-                }
+            let spieltagMatches: Match[] = [];
+            for (let match of createSpieltag.matches) {
+                let heim: Mannschaft = await this.mannschaftService.search(saisonId, match.heim);
+                let gast: Mannschaft = await this.mannschaftService.search(saisonId, match.gast);
+                let heimTore: number = match.heimTore;
+                let gastTore: number = match.gastTore;
+                console.log('MATCH: ', heim.team, gast.team, heimTore, gastTore);
+                // Spiel mit Tore anlegen
+                let savedMatch: Match = await this.matchService.create(heim, gast, match.heimTore, match.gastTore);
+                spieltagMatches.push(savedMatch);
             }
-            let savedSpiele: Spiel[] = await this.spielService.createSpiele(spieltagSpiele);
+            let savedMatches: Match[] = await this.matchService.createMatches(spieltagMatches);
             let spieltag: Spieltag = new Spieltag();
             spieltag.nr = createSpieltag.nr;
-            spieltag.spiele = savedSpiele;
+            spieltag.saisonId = saisonId;
+            spieltag.matches = savedMatches;
             savedSpieltage.push(spieltag);
         }
         return await this.spieltagRepository.save(savedSpieltage);
     }
 
+    /*
     async delete(id: number): Promise<DeleteResult> {
         let spieltag: Spieltag = await this.find(id);
         this.logger.log('deleteSpieltag' + id);
         this.logger.log(spieltag);
         if (!!spieltag && !!spieltag.spiele) {
-            await this.spielService.deleteSpiele(spieltag.spiele);
+            await this.matchService.deleteSpiele(spieltag.spiele);
         }
         return this.spieltagRepository.delete(id);
     }
+    */
 }
 
 export interface CreateSpieltag {
     nr: number;
-    spiele: 
+    matches: 
         [
             {
                 heim: string;
                 gast: string;
-                heimTore?: number;
-                gastTore?: number;
+                heimTore: number;
+                gastTore: number;
             }
         ]
 }

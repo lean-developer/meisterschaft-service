@@ -1,23 +1,70 @@
-import { Score } from './score';
+import { Score } from '../saison/score';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DeleteResult } from 'typeorm';
 import { Mannschaft, MannschaftRaw } from './mannschaft.entity';
 import * as cheerio from 'cheerio';
 import { MannschaftFifa } from './mannschaftFifa';
+import { MannschaftClub } from './mannschaftClub';
 const axios = require('axios');
 
 @Injectable()
 export class MannschaftService {
     private readonly logger = new Logger(MannschaftService.name);
-    
+
     constructor(
-        @InjectRepository(Mannschaft) 
+        @InjectRepository(Mannschaft)
         private readonly mannschaftRepository: Repository<Mannschaft>) {
     }
 
     async findAll(): Promise<Mannschaft[]> {
         return await this.mannschaftRepository.find();
+    }
+
+    async find(id: number): Promise<Mannschaft> {
+        return await this.mannschaftRepository.findOne(id);
+    }
+
+    async findWithMatches(id: number): Promise<Mannschaft> {
+        const mannschaft = this.mannschaftRepository
+            .createQueryBuilder('mannschaft')
+            .leftJoinAndSelect('mannschaft.heimMatches', 'heimMatches')
+            .leftJoinAndSelect('mannschaft.gastMatches', 'gastMatches')
+            .where('mannschaft.id = :id', { id })
+            .getOne();
+        return mannschaft;
+    }
+
+    async search(saisonId: number, searchStr: string): Promise<Mannschaft> {
+        const mannschaft = this.mannschaftRepository
+            .createQueryBuilder('mannschaft')
+            .where('mannschaft.saisonId = :saisonId', { saisonId })
+            .andWhere('mannschaft.name LIKE :name OR mannschaft.kuerzel LIKE :kuerzel', { 
+                name: `%${searchStr}%`,
+                kuerzel: `%${searchStr}%`,
+            })
+            .getOne();
+        return mannschaft;
+    }
+
+    async findBySaison(saisonId: number): Promise<Mannschaft[]> {
+        const mannschaften = this.mannschaftRepository
+            .createQueryBuilder('mannschaft')
+            .where('mannschaft.saisonId = :saisonId', { saisonId })
+            .orderBy('mannschaft.name')
+            .getMany();
+        return mannschaften;
+    }
+
+    async findBySaisonWithMatches(saisonId: number): Promise<Mannschaft[]> {
+        const mannschaften = this.mannschaftRepository
+            .createQueryBuilder('mannschaft')
+            .leftJoinAndSelect('mannschaft.heimMatches', 'heimMatches')
+            .leftJoinAndSelect('mannschaft.gastMatches', 'gastMatches')
+            .where('mannschaft.saisonId = :saisonId', { saisonId })
+            .orderBy('mannschaft.name')
+            .getMany();
+        return mannschaften;
     }
 
     async findAllFifaForConfederation(confederation: string) {
@@ -31,6 +78,56 @@ export class MannschaftService {
         return mannschaften;
     }
 
+    /**
+     * Liefert die aktuelle Club-Uefa-Rangliste (Club-Mannschaften Europas).
+     */
+    async findAllClubs() {
+        let clubMannschaften: MannschaftClub[] = [];
+        const indexes = [0, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275];
+        for(let i of indexes) {
+            clubMannschaften = clubMannschaften.concat(await this.findAllClubsByYearAndIndex(new Date().getFullYear(), i));
+        }
+        return clubMannschaften;
+    }
+
+    async findAllClubsByYearAndIndex(year: number, index: number) {
+        const clubMannschaften: MannschaftClub[] = [];
+        try {
+            const html = await axios.get('https://www.clubworldranking.com/deutsch/rangliste-clubs?wd=14&yr=' + year + '&index=' + index);
+            const $ = cheerio.load(html.data);
+            const elems = $('div.rank');
+            for (let i = 0; i < elems.length; i++) {
+                const div = $(elems[i]);
+                const rank = $(div).text().trim();
+                const aHref = $(div).parent();
+                const country = $(aHref).find('i.flag').attr('title');
+                const team = $(aHref).find('div.col-name').text();
+                let img = $(aHref).find('img').attr('src'); 
+                if (!img) {
+                    continue;
+                }
+                img = 'https://www.clubworldranking.com' + img;
+                const points = $(aHref).find('div.points').text();
+                const idArray = img.match(/[0-9]+/g);
+
+                const club: MannschaftClub = new MannschaftClub();
+                club.uid = +idArray[0];
+                club.rank = +rank;
+                club.team = team.trim();
+                club.country = country.trim();
+                club.img = img;
+                club.points = +points;
+                clubMannschaften.push(club);
+            }
+        } catch (e) {
+            this.logger.error(e);
+        }
+        return clubMannschaften;
+    }
+
+    /**
+     * Liefert die aktuelle Nationalmannschaft-Weltrangliste.
+     */
     async findAllFifa() {
         let mannschaftenFifa: Array<MannschaftFifa> = [];
         let html = await axios.get('https://de.fifa.com/fifa-world-ranking/ranking-table/men/');
@@ -48,13 +145,13 @@ export class MannschaftService {
             const teamId = $(td).find('span.fi-t__nTri').text();
             const img = $(td).find('img').attr('src');
             let conf: string = confederation.replace('#', '').replace('#', '');
-            
+
             let mannschaftFifa: MannschaftFifa = new MannschaftFifa();
-            mannschaftFifa.id = id;
+            mannschaftFifa.uid = id;
             mannschaftFifa.rank = rank;
             mannschaftFifa.points = points;
             mannschaftFifa.prevpoints = prevpoints;
-            mannschaftFifa.rankingmovement = rankingmovement;  
+            mannschaftFifa.rankingmovement = rankingmovement;
             mannschaftFifa.confederation = conf;
             mannschaftFifa.team = team;
             mannschaftFifa.teamId = teamId;
@@ -65,7 +162,7 @@ export class MannschaftService {
     }
 
     async findAllSpiele(): Promise<Mannschaft[]> {
-        return await this.mannschaftRepository.find( { relations: ["heimSpiele", "gastSpiele", "heimSpiele.gast", "gastSpiele.heim"]}); 
+        return await this.mannschaftRepository.find();
     }
 
     async findByKuerzel(kuerzel: string): Promise<Mannschaft> {
@@ -78,6 +175,7 @@ export class MannschaftService {
     async getScores(): Promise<Score[]> {
         let mannschaften: Mannschaft[] = await this.findAllSpiele();
         let scores: Score[] = [];
+        /* TODO
         for (let mannschaft of mannschaften) {
             let siege: number = 0;
             let spiele: number = 0;
@@ -85,7 +183,7 @@ export class MannschaftService {
             let niederlagen: number = 0;
             let heimPunkte: number = 0;
             let heimTorePlus: number = 0;
-            let heimToreMinus: number = 0; 
+            let heimToreMinus: number = 0;
             for (let spiel of mannschaft.heimSpiele) {
                 if (!spiel.isGespielt) {
                     continue;
@@ -153,11 +251,12 @@ export class MannschaftService {
             score.gastToreMinus = gastToreMinus;
             score.torDiff = torDiff;
             score.setSortFaktor();
-            scores.push(score); 
+            scores.push(score);
         }
-        scores.sort( 
+        scores.sort(
             (a, b) => (a.sortFaktor < b.sortFaktor) ? 1 : -1
         );
+        */
         return scores;
     }
 
@@ -169,7 +268,24 @@ export class MannschaftService {
         return await this.mannschaftRepository.save(mannschaften);
     }
 
+    async saveOrCreateByUID(saisonId: number, mannschaften: Mannschaft[]): Promise<Mannschaft[]> {
+        const savedMannschaften: Mannschaft[] = [];
+        const saisonMannschaften: Mannschaft[] = await this.findBySaison(saisonId);
+        for (const m of mannschaften) {
+            const list: Mannschaft[] = saisonMannschaften.filter(i => i.saisonId === saisonId && i.uid === m.uid);
+            if (list.length > 0) {
+                if (list[0]) {
+                    continue;
+                }
+            }
+            m.saisonId = saisonId;
+            const savedMannschaft: Mannschaft = await this.create(m);
+            savedMannschaften.push(savedMannschaft);
+        }
+        return savedMannschaften;
+    }
+
     async delete(id: number): Promise<DeleteResult> {
-        return this.mannschaftRepository.delete(id);
+        return this.mannschaftRepository.delete(id); 
     }
 }

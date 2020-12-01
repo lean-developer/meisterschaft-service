@@ -1,14 +1,22 @@
 import { Spiel } from './../spiel/spiel.entity';
-import { Column, JoinTable, ManyToMany, PrimaryColumn } from 'typeorm';
+import { Column, JoinTable, ManyToMany, PrimaryColumn, ManyToOne } from 'typeorm';
 import { Entity } from 'typeorm';
 import { PrimaryGeneratedColumn } from 'typeorm';
+import { Saison } from 'src/saison/saison.entity';
+import { Match } from 'src/match/match.entity';
 
 @Entity('spieltag')
 export class Spieltag {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
     nr: number;
 
-    @ManyToMany(type => Spiel, { cascade: true })
+    @Column()
+    saisonId: number;
+
+    @ManyToMany(type => Match, { cascade: true })
     @JoinTable()
-    spiele: Spiel[];
+    matches: Match[];
 }

@@ -48,7 +48,7 @@ export class CacheService {
     for (let spieltag of spieltage) {
       let key: string = 'spieltag:' + spieltag.nr;
       let members: Array<string> = [];
-      for (let spiel of spieltag.spiele) {
+      for (let spiel of spieltag.matches) {
         let member: string = 'spiel:' + spiel.id;
         members.push(member);
       }
@@ -62,14 +62,14 @@ export class CacheService {
     this.setSpiele(spiele);
   }
 
-  public setSpiele(spiele: Array<Spiel>): void {
+  public setSpiele(spiele: Array<Spiel>): void { 
     for (let spiel of spiele) {
       let hashKey: string = 'spiel:' + spiel.id;
       let fieldValueId: HashFieldValue = { field: 'id', value: spiel.id.toString() };
       let fieldValueHeimTore: HashFieldValue = { field: 'heimTore', value: spiel.heimTore.toString() };
       let fieldValueGastTore: HashFieldValue = { field: 'gastTore', value: spiel.gastTore.toString() };
-      let fieldValueHeim: HashFieldValue = { field: 'heim', value: 'mannschaft:' + spiel.heim.id.toString() };
-      let fieldValueGast: HashFieldValue = { field: 'gast', value: 'mannschaft:' + spiel.gast.id.toString() };
+      let fieldValueHeim: HashFieldValue = { field: 'heim', value: 'mannschaft:' + spiel.heimId.toString() };
+      let fieldValueGast: HashFieldValue = { field: 'gast', value: 'mannschaft:' + spiel.gastId.toString() };
       let fieldValues: Array<HashFieldValue> = [];
       fieldValues.push(fieldValueId);
       fieldValues.push(fieldValueHeimTore);
@@ -91,7 +91,7 @@ export class CacheService {
     }
     let spieltag: Spieltag = new Spieltag();
     spieltag.nr = nr;
-    spieltag.spiele = spiele;
+    // spieltag.matches = spiele;
     return spieltag;
   }
   
@@ -123,8 +123,8 @@ export class CacheService {
     spiel.id = spielRaw.id;
     spiel.heimTore = spielRaw.heimTore;
     spiel.gastTore = spielRaw.gastTore;
-    spiel.heim = heim;
-    spiel.gast = gast;
+    spiel.heimId = heim.id;
+    spiel.gastId = gast.id;
     return spiel;
   }
 }

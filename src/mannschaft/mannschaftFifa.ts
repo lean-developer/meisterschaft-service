@@ -1,5 +1,5 @@
 export class MannschaftFifa {
-    id: number;
+    uid: number;
     rank: number;
     points: number;
     prevpoints: number;
